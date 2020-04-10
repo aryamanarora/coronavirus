@@ -4,84 +4,106 @@
 <title>Coronavirus US</title>
 <script src="https://d3js.org/d3.v5.js"></script>
 <script src="https://unpkg.com/topojson@3"></script>
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400italic,600italic,700italic,200,300,400,600,700,900">
 
 <!-- CSS -->
 <style>
  
-	path {
-	 	stroke:black;
-	 	stroke-width: 0.1px;
-	}
-	 
-	body {
-	 	font-family: 'Proxima Nova', sans-serif;
-	}
-	 
-	.county {
-	 	font: 14px sans-serif;
-	 	font-weight: bold;
-	}
-	 
-	.legend {
-	 	font-size: 14px;
-	 	font-family: 'Proxima Nova', sans-serif;
-	}
+ body, h1, h2, h3, p {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 1em;
+  color: #333;
+  font-weight: 400;
+}
 
-	.legend_title {
-	 	font-size: 14px;
-	 	font-family: 'Proxima Nova', sans-serif;
-	 	font-weight: bold;
-	}
-	 
-	div.tooltip {
-	 	position: absolute;
-	 	left: 75px;
-	 	text-align: center;
-	 	height: 16px;
-	 	padding: 10px;
-	 	font-size: 14px;
-	 	background: #FFFFFF;
-	 	border: 1px solid #989898;
- 		pointer-events: none;
-	}
+#content {
+  margin: 5px;
+  padding: 20px;
+  width: 805px;
+  border: 1px solid #ccc;
+}
 
-	p {
-		font-family: 'Proxima Nova', sans-serif;
-		font-size:10px;
-		margin: 20px 0 0 10px;
-    }
-    
-    .tooltip {
-        position: absolute;
-        padding: 7px;
-        font-size: 0.9em;
-        pointer-events: none;
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+#map {
+  margin: 10px 0px 0px 0px;
+  padding: 0px;
+}
 
-        -moz-box-shadow:    3px 3px 10px 0px rgba(0, 0, 0, 0.25);
-        -webkit-box-shadow: 3px 3px 10px 0px rgba(0, 0, 0, 0.25);
-        box-shadow:         3px 3px 10px 0px rgba(0, 0, 0, 0.25);
-    }
+h1, h2 {
+  line-height: 1em;
+  font-size: 1.75em;
+  font-weight: 900;
+  color: #000;
+}
 
-    .tooltip p {
-        margin: 0;
-        padding: 0;
-    }
+h2.date {
+  margin: 10px 0px 0px 0px;
+  font-size: 1.3em;
+  font-weight: 700;
+}
 
-	@media (max-width: 400px) {
-    .d3map {
-        display: none;
-    }
+p {
+  margin: 10px 0px 0px 0px;
+}
+
+
+.states {
+  fill: none;
+  stroke: black;
+  stroke-width: 0.5px;
+  stroke-linejoin: round;
+}
+
+input {
+  display: block;
+  width: 200px;
+  margin: 10px 0px 0px 0px;
+}
+
+#legend text {
+  font-size: 0.9em;
+  color: #333;
+  font-weight: 400;
+}
+
+.tooltip {
+  position: absolute;
+  padding: 7px;
+  font-size: 0.9em;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+
+  -moz-box-shadow:    3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  -webkit-box-shadow: 3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+  box-shadow:         3px 3px 10px 0px rgba(0, 0, 0, 0.25);
+}
+
+.tooltip p {
+  margin: 0;
+  padding: 0;
+}
+
+.tooltip table {
+  margin: 0;
+  padding: 0;
+  border-collapse: collapse;
+}
+
+.wide {
+  width: 140px;
 }
 </style>
 
-<h1>Coronavirus Cases in the US</h1>
-<h2 class="date"></h2>
-<div class="slider"></div>
-<svg id="map"></svg>
-<p>Source: JHU</p>		
-<script src="viz.js"></script>
+<div style="width: 100%; margin: 10px;">
+    <h1>Coronavirus Cases in the US</h1>
+    <h2 class="date"></h2>
+    <div class="slider"></div>
+    <svg id="map"></svg>
+    <p>Source: JHU</p>		
+    <script src="viz.js"></script>
+</div>
 
 </html>
