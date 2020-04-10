@@ -1,6 +1,9 @@
-var svg = d3.select("svg"),
-  width = +svg.attr("width"),
-  height = +svg.attr("height")
+var width = 1000;
+var height = 1000;
+
+var svg = d3.select("svg")
+    .attr("width", width)
+    .attr("height", height)
 
 var projection = d3.geoAlbersUsa()
 
@@ -11,7 +14,7 @@ var tooltip = d3.select("body").append("div")
 var path = d3.geoPath()
     .projection(projection)
 
-var color = d3.scaleLog([1, 1000000], ["grey", "red"])
+var color = d3.scaleLog([1, 1000000], ["white", "red"])
 
 var legend = svg.selectAll("g.legend")
     .data([1, 10, 100, 1000, 10000, 100000])
