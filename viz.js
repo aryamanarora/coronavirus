@@ -54,7 +54,7 @@ function load(us, data) {
         data.set(d, data.get(36061))
     });
     
-    svg.append("g")
+    counties = svg.append("g")
         .selectAll("path")
         .data(topojson.feature(us, us.objects.counties).features)
         .enter()
@@ -62,9 +62,11 @@ function load(us, data) {
         .attr("d", path)
         .attr("class", "county")
         .attr("id", function (d) { return "id " + d.id })
+    
+    counties
         .style("fill", function (d) {
             if (data.get(d.id)) {
-                return color(data.get(d.id).count || 1)
+                return color(data.get(d.id)["4/8/20"] || 1)
             }
             return color(1)
         })
@@ -73,7 +75,7 @@ function load(us, data) {
 			.duration(250)
 			.style("opacity", 1);
 			tooltip.html(
-			"<p><strong>" + data.get(d.id).name + "</strong>: " + data.get(d.id).count + "</p>")
+			"<p><strong>" + data.get(d.id).name + "</strong>: " + data.get(d.id)["4/8/20"] + "</p>")
 			.style("left", (d3.event.pageX + 15) + "px")
 			.style("top", (d3.event.pageY - 28) + "px");
 		})
@@ -81,12 +83,56 @@ function load(us, data) {
 			tooltip.transition()
 			.duration(250)
 			.style("opacity", 0);
-		});
+        });
+    
+    function update(key){
+        slider.property("value", key);
+        d3.select(".date").text(dates[key]);
+        counties.style("fill", function(d) {
+                if (data.get(d.id)) {
+                    return color(data.get(d.id)[dates[key]] || 1)
+                }
+                return color(1)
+            })
+            .on("mouseover", function(d) {
+                tooltip.transition()
+                .duration(250)
+                .style("opacity", 1);
+                tooltip.html(
+                "<p><strong>" + data.get(d.id).name + "</strong>: " + data.get(d.id)[dates[key]] + "</p>")
+                .style("left", (d3.event.pageX + 15) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+                tooltip.transition()
+                .duration(250)
+                .style("opacity", 0);
+            });
+    }
+
+    var slider = d3.select(".slider")
+        .append("input")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", dates.length - 1)
+            .attr("step", 1)
+            .on("input", function() {
+                var date = this.value;
+                update(date);
+            });
+    
+    update(dates.length - 1)
 }
+
+dates = ["1/22/20", "1/23/20", "1/24/20", "1/25/20", "1/26/20", "1/27/20", "1/28/20", "1/29/20", "1/30/20", "1/31/20", "2/1/20", "2/2/20", "2/3/20", "2/4/20", "2/5/20", "2/6/20", "2/7/20", "2/8/20", "2/9/20", "2/10/20", "2/11/20", "2/12/20", "2/13/20", "2/14/20", "2/15/20", "2/16/20", "2/17/20", "2/18/20", "2/19/20", "2/20/20", "2/21/20", "2/22/20", "2/23/20", "2/24/20", "2/25/20", "2/26/20", "2/27/20", "2/28/20", "2/29/20", "3/1/20", "3/2/20", "3/3/20", "3/4/20", "3/5/20", "3/6/20", "3/7/20", "3/8/20", "3/9/20", "3/10/20", "3/11/20", "3/12/20", "3/13/20", "3/14/20", "3/15/20", "3/16/20", "3/17/20", "3/18/20", "3/19/20", "3/20/20", "3/21/20", "3/22/20", "3/23/20", "3/24/20", "3/25/20", "3/26/20", "3/27/20", "3/28/20", "3/29/20", "3/30/20", "3/31/20", "4/1/20", "4/2/20", "4/3/20", "4/4/20", "4/5/20", "4/6/20", "4/7/20", "4/8/20"]
 
 d3.json("us.json").then(function(us) {
     d3.csv("data.csv", function(d) {
-        return [+d.FIPS, {'count': +d["4/8/20"], 'name': d["Combined_Key"]}]
+        ret = {'name': d["Combined_Key"]}
+        dates.forEach(function (date) {
+            ret[date] = d[date]
+        })
+        return [+d.FIPS, ret]
     }).then(function(data) {
         load(us, data)
     })
