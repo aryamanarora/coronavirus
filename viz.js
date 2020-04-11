@@ -101,6 +101,11 @@ function load(us, data) {
         data.set(d, data.get(36061))
     })
 
+    dukes_and_nantucket = [25007, 25019]
+    dukes_and_nantucket.forEach(d => {
+        data.set(d, data.get(25007))
+    })
+
     function clicked(d) {
         console.log(d)
         if(d.id == clicked_obj) { 
@@ -155,7 +160,11 @@ function load(us, data) {
                     .duration(250)
                     .style("opacity", 1)
                 tooltip.html(
-                    "<p><strong>" + data.get(d.id).name + "</strong><br>" + data.get(d.id)[dates[key]] + " case" + (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "</p>")
+                    "<p><strong>" + data.get(d.id).name + "</strong><br>" +
+                        data.get(d.id)[dates[key]].toLocaleString() + " case" +
+                        (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
+                        data.get(d.id).population.toLocaleString() + " people" +
+                        "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
 
@@ -223,13 +232,20 @@ function load(us, data) {
 }
 
 d3.json("us.json").then(function(us) {
-    d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv", function(d) {
-        ret = {'name': d["Combined_Key"]}
-        dates.forEach(function (date) {
-            ret[date] = d[date]
+    d3.csv("lookup.csv", function (d) {
+        return [+d.UID, +d.Population]
+    }).then(function(pop) {
+        pop = new Map(pop)
+        d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv", function(d) {
+            ret = {'name': d["Admin2"] + ", " + d["Province_State"]}
+            dates.forEach(function (date) {
+                ret[date] = +d[date]
+            })
+            ret["population"] = pop.get(+d.UID)
+            if (d.UID == '84070002') return [25007, ret]
+            return [+d.FIPS, ret]
+        }).then(function(data) {
+            load(us, data)
         })
-        return [+d.FIPS, ret]
-    }).then(function(data) {
-        load(us, data)
     })
 })
