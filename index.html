@@ -9,13 +9,18 @@
 <!-- CSS -->
 <style>
  
- body, h1, h2, h3, p {
+body, h1, h2, h3, p {
   margin: 0;
   padding: 0;
   font-family: 'Source Sans Pro', sans-serif;
   font-size: 1em;
   color: #333;
   font-weight: 400;
+}
+
+.county {
+  stroke-width: 0px;
+  stroke-opacity: 0;
 }
 
 #content {
@@ -41,6 +46,12 @@ h2.date {
   margin: 10px 0px 0px 0px;
   font-size: 1.3em;
   font-weight: 700;
+}
+
+h3 {
+  font-size: 1.25em;
+  margin: 0px 0px 0px 0px;
+  font-weight: 900;
 }
 
 p {
@@ -69,7 +80,8 @@ input {
 
 .tooltip {
   position: absolute;
-  padding: 7px;
+  padding: 10px;
+  margin: 10px;
   font-size: 0.9em;
   pointer-events: none;
   background: #fff;
@@ -99,12 +111,22 @@ input {
 
 <div style="width: 100%; margin: 10px;">
     <h1>Coronavirus Cases in the US</h1>
-    <h2 class="date"></h2>
-    <p></p>
-    <div class="slider"></div>
+    <div id="info">
+      <h2 class="date"></h2>
+      <div class="slider"></div>
+    </div>
     <div class="button"></div>
-    <svg id="map"></svg>
-    <svg id="legend"></svg>
+    <table>
+      <tr>
+        <td valign="top" width="1000px">
+          <svg id="map"></svg>
+          <svg id="legend"></svg>
+        </td>
+        <td valign="top">
+          <div class="tooltip"></div>
+        </td>
+      </tr>
+    </table>
     <p>Source: JHU</p>		
     <script src="viz.js"></script>
 </div>

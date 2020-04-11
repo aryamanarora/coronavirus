@@ -9,18 +9,29 @@ var dates = ["1/22/20", "1/23/20", "1/24/20", "1/25/20", "1/26/20", "1/27/20", "
     "3/26/20", "3/27/20", "3/28/20", "3/29/20", "3/30/20", "3/31/20", "4/1/20", "4/2/20",
     "4/3/20", "4/4/20", "4/5/20", "4/6/20", "4/7/20", "4/8/20", "4/9/20", "4/10/20"]
 
+var container = d3.select("#map")
+    .attr("width", 1000)
+    .attr("height", 500)
+
 var width = 1000
 var height = 500
 
-var svg = d3.select("#map")
+var graph_width = 300
+var graph_height = 300
+
+var svg = container.append("svg")
     .attr("width", width)
     .attr("height", height)
 
 var projection = d3.geoAlbersUsa()
 
+var infobar = d3.select(".tooltip")
+    .style("opacity", 0)
+    .style("width", 480)
+
 var tooltip = d3.select("body").append("div")
-	.attr("class", "tooltip")
-	.style("opacity", 0)
+    .attr("class", "tooltip")
+    .style("opacity", 0)
 
 var path = d3.geoPath()
     .projection(projection)
@@ -32,7 +43,7 @@ function color(num) {
 }
 
 var legend = d3.select("#legend")
-    .attr("width", width)
+    .attr("width", "1000")
     .attr("height", "100")
     .selectAll("g.legend")
     .data([0, 1, 10, 100, 1000, 10000, 100000, 1000000])
@@ -49,7 +60,7 @@ function linepos(x) {
 }
 		 
 legend.append("rect")
-    .attr("x", function(d, i){ return width - (i*ls_w) - ls_w})
+    .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 30)
     .attr("width", ls_w)
     .attr("height", ls_h)
@@ -57,7 +68,7 @@ legend.append("rect")
 
 labels = ["0", "1", "10", "100", "1000", "10000", "100000", "1000000"]
 legend.append("text")
-    .attr("x", function(d, i){ return width - (i*ls_w) - ls_w})
+    .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 70)
     .text(function(d, i){ return labels[i] })
 
@@ -80,7 +91,6 @@ svg.on("click", unzoomed)
 
 function zoomed() {
     g.attr("transform", d3.event.transform)
-    tooltip.attr("transform", d3.event.transform)
 }
 
 function unzoomed() {
@@ -97,14 +107,33 @@ function load(us, data, deaths) {
     data = new Map(data)
     deaths = new Map(deaths)
 
+    var slider = d3.select(".slider")
+        .append("input")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", dates.length - 1)
+            .attr("step", 1)
+            .on("input", function() {
+                var date = this.value
+                update(date)
+            })
+
     function clicked(d) {
-        console.log(data.get(d.id))
         if (data.get(d.id).id == clicked_obj) { 
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
+            infobar.selectAll("g").remove();
+            infobar.transition()
+                .duration(250)
+                .style("opacity", 0)
             return
         }
+
+        infobar.transition()
+            .duration(250)
+            .style("opacity", 1)
+
         clicked_obj = data.get(d.id).id
         
         counties.style("opacity", "0.5")
@@ -121,6 +150,8 @@ function load(us, data, deaths) {
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
             d3.mouse(svg.node())
         )
+        
+        update(slider.property("value"))
     }
     
     counties = g.selectAll("path")
@@ -154,6 +185,7 @@ function load(us, data, deaths) {
     })
     
     function update(key){
+        console.log(key)
         slider.property("value", key)
         d3.select(".date").text(dates[key])
         counties.style("fill", function(d) {
@@ -169,85 +201,83 @@ function load(us, data, deaths) {
                 tooltip.html(
                     "<p><strong>" + data.get(d.id).name + "</strong><br>" +
                         data.get(d.id)[dates[key]].toLocaleString() + " case" +
-                        (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
-                        deaths.get(d.id)[dates[key]].toLocaleString() + " death" +
-                        (deaths.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
-                        data.get(d.id).population.toLocaleString() + " people" +
+                        (data.get(d.id)[dates[key]] == 1 ? "" : "s") +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
-
-                var line = tooltip
-                    .append("svg")
-                        .attr("width", 300)
-                        .attr("height", 300)
-                    .append("g")
-                        .attr("transform", "translate(50, 50)")
-                
-                dat = []
-                dat_deaths = []
-                for (id in dates) {
-                    dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
-                    dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
-                }
-                
-                var x = d3.scaleLinear()
-                    .domain([0, dates.length - 1])
-                    .range([0, 200])
-
-                line.append("g")
-                    .attr("transform", "translate(0, 200)")
-                    .call(d3.axisBottom(x).tickFormat((d, i) => dates[d]))
-                    .selectAll(".tick text")
-                    .style("text-anchor", "end")
-                    .attr("transform", "rotate(-45) translate(-6, -10)")
-                    
-                var y = d3.scaleLinear()
-                    .domain([0, d3.max(dat, function(d) {
-                        return parseInt(d.y)
-                    })])
-                    .range([200, 0])
-
-                line.append("g")
-                    .call(d3.axisLeft(y))
-
-                line.append("path")
-                    .datum(dat)
-                    .attr("fill", "none")
-                    .attr("stroke", "steelblue")
-                    .attr("stroke-width", 1.5)
-                    .attr("d", d3.line()
-                        .x(function(a) { return x(a.x) })
-                        .y(function(a) { return y(a.y) })
-                    )
-
-                line.append("path")
-                    .datum(dat_deaths)
-                    .attr("fill", "none")
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 1.5)
-                    .attr("d", d3.line()
-                        .x(function(a) { return x(a.x) })
-                        .y(function(a) { return y(a.y) })
-                    )
             })
-            .on("mouseout", function(d) {
+            .on("mouseout", function (d) {
                 tooltip.transition()
                     .duration(250)
                     .style("opacity", 0)
             })
-    }
+        
+        if (clicked_obj == null) return
 
-    var slider = d3.select(".slider")
-        .append("input")
-            .attr("type", "range")
-            .attr("min", 0)
-            .attr("max", dates.length - 1)
-            .attr("step", 1)
-            .on("input", function() {
-                var date = this.value
-                update(date)
-            })
+        d = {"id": clicked_obj}
+        infobar.html(
+            "<p><h3>" + data.get(d.id).name + "</h3><br>" +
+                data.get(d.id)[dates[key]].toLocaleString() + " confirmed case" +
+                (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
+                deaths.get(d.id)[dates[key]].toLocaleString() + " death" +
+                (deaths.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
+                data.get(d.id).population.toLocaleString() + " people" +
+                "</p><br>")
+
+        var line = infobar.append("svg")
+            .attr("height", graph_height + 50)
+            .attr("width", graph_width + 50)
+            .append("g")
+            .attr("transform", "translate(40, 10)")
+
+        dat = []
+        dat_deaths = []
+        for (id in dates) {
+            dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
+            dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
+        }
+        
+        var x = d3.scaleLinear()
+            .domain([0, dates.length - 1])
+            .range([0, graph_width])
+
+        line.append("g")
+            .attr("transform", "translate(0, " + graph_height + ")")
+            .call(d3.axisBottom(x).tickFormat((d, i) => dates[d]))
+            .selectAll(".tick text")
+            .style("text-anchor", "end")
+            .attr("transform", "rotate(-45) translate(-6, -10)")
+            
+        var y = d3.scaleLinear()
+            .domain([0, d3.max(dat, function(d) {
+                return parseInt(d.y)
+            })])
+            .range([graph_height, 0])
+
+        line.append("g")
+            .call(d3.axisLeft(y))
+            .attr("transform", "translate(0, 0)")
+
+        line.append("path")
+            .datum(dat)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(a) { return x(a.x) })
+                .y(function(a) { return y(a.y) })
+            )
+
+        line.append("path")
+            .datum(dat_deaths)
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(a) { return x(a.x) })
+                .y(function(a) { return y(a.y) })
+            )
+    }
     
     update(dates.length - 1)
 }
