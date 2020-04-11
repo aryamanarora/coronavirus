@@ -99,6 +99,11 @@ function load(us, data) {
                     .append("g")
                         .attr("transform", "translate(50, 50)");
                 
+                dat = []
+                for (id in dates) {
+                    dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
+                }
+                
                 var x = d3.scaleLinear()
                     .domain([0, dates.length - 1])
                     .range([0, 200])
@@ -110,18 +115,15 @@ function load(us, data) {
                     .style("text-anchor", "end")
                     .attr("transform", "rotate(-45) translate(-6, -10)")
                     
-                
                 var y = d3.scaleLinear()
-                    .domain([0, data.get(d.id)[dates[dates.length - 1]]])
+                    .domain([0, d3.max(dat, function(d) {
+                        return parseInt(d.y)
+                    })])
                     .range([200, 0])
 
                 line.append("g")
                     .call(d3.axisLeft(y))
-                
-                dat = []
-                for (id in dates) {
-                    dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
-                }
+
                 line.append("path")
                     .datum(dat)
                     .attr("fill", "none")
