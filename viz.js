@@ -93,31 +93,22 @@ function unzoomed() {
 
 var clicked_obj = null
 
-function load(us, data) {
+function load(us, data, deaths) {
     data = new Map(data)
-
-    new_york = [36081, 36005, 36047, 36085]
-    new_york.forEach(d => {
-        data.set(d, data.get(36061))
-    })
-
-    dukes_and_nantucket = [25007, 25019]
-    dukes_and_nantucket.forEach(d => {
-        data.set(d, data.get(25007))
-    })
+    deaths = new Map(deaths)
 
     function clicked(d) {
-        console.log(d)
-        if(d.id == clicked_obj) { 
+        console.log(data.get(d.id))
+        if (data.get(d.id).id == clicked_obj) { 
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
             return
         }
-        clicked_obj = d.id
+        clicked_obj = data.get(d.id).id
         
-        counties.style("opacity", "0.3")
-        d3.select("#id-" + d.id)
+        counties.style("opacity", "0.5")
+        d3.selectAll("#id-" + data.get(d.id).id)
             .style("opacity", "1")
 
         const [[x0, y0], [x1, y1]] = path.bounds(d)
@@ -145,6 +136,22 @@ function load(us, data) {
         .datum(topojson.feature(us, us.objects.states, function(a, b) { return a !== b }))
             .attr("class", "states")
             .attr("d", path)
+
+    new_york = [36081, 36005, 36047, 36085]
+    new_york.forEach(d => {
+        data.set(d, data.get(36061))
+        deaths.set(d, deaths.get(36061))
+        d3.select("#id-" + d)
+            .attr("id", "id-36061")
+    })
+
+    dukes_and_nantucket = [25019]
+    dukes_and_nantucket.forEach(d => {
+        data.set(d, data.get(25007))
+        deaths.set(d, deaths.get(25007))
+        d3.select("#id-" + d)
+            .attr("id", "id-25007")
+    })
     
     function update(key){
         slider.property("value", key)
@@ -163,6 +170,8 @@ function load(us, data) {
                     "<p><strong>" + data.get(d.id).name + "</strong><br>" +
                         data.get(d.id)[dates[key]].toLocaleString() + " case" +
                         (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
+                        deaths.get(d.id)[dates[key]].toLocaleString() + " death" +
+                        (deaths.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
                         data.get(d.id).population.toLocaleString() + " people" +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
@@ -176,8 +185,10 @@ function load(us, data) {
                         .attr("transform", "translate(50, 50)")
                 
                 dat = []
+                dat_deaths = []
                 for (id in dates) {
                     dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
+                    dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
                 }
                 
                 var x = d3.scaleLinear()
@@ -204,6 +215,16 @@ function load(us, data) {
                     .datum(dat)
                     .attr("fill", "none")
                     .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d3.line()
+                        .x(function(a) { return x(a.x) })
+                        .y(function(a) { return y(a.y) })
+                    )
+
+                line.append("path")
+                    .datum(dat_deaths)
+                    .attr("fill", "none")
+                    .attr("stroke", "red")
                     .attr("stroke-width", 1.5)
                     .attr("d", d3.line()
                         .x(function(a) { return x(a.x) })
@@ -242,10 +263,26 @@ d3.json("us.json").then(function(us) {
                 ret[date] = +d[date]
             })
             ret["population"] = pop.get(+d.UID)
-            if (d.UID == '84070002') return [25007, ret]
+            ret["id"] = +d.FIPS
+            if (d.UID == '84070002') {
+                ret["id"] = 25007
+                return [25007, ret]
+            }
             return [+d.FIPS, ret]
         }).then(function(data) {
-            load(us, data)
+            d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv", function(d) {
+                ret = {}
+                dates.forEach(function (date) {
+                    ret[date] = +d[date]
+                })
+                if (d.UID == '84070002') {
+                    ret["id"] = 25007
+                    return [25007, ret]
+                }
+                return [+d.FIPS, ret]
+            }).then(function(deaths) {
+                load(us, data, deaths)
+            })
         })
     })
 })
