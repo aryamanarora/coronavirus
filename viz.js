@@ -232,13 +232,23 @@ function load(us, data, deaths) {
 
         dat = []
         dat_deaths = []
-        for (id in dates) {
-            dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
-            dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
+        start = dates.length
+        for (var id = 0; id < dates.length; id++) {
+            if (data.get(d.id)[dates[id]] > 0) {
+                if (start == dates.length) {
+                    dat.push({"x": id - 1, "y": 0})
+                    dat_deaths.push({"x": id - 1, "y": 0})
+                    start = id
+                }
+            }
+            if (start != dates.length) {
+                dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
+                dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
+            }
         }
         
         var x = d3.scaleLinear()
-            .domain([0, dates.length - 1])
+            .domain([start - 1, dates.length - 1])
             .range([0, graph_width])
 
         line.append("g")
