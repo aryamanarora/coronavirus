@@ -206,6 +206,11 @@ function load(us, data, deaths) {
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
             })
+            .on("mousemove", function (d) {
+                tooltip
+                    .style("left", (d3.event.pageX + 15) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px")
+            })
             .on("mouseout", function (d) {
                 tooltip.transition()
                     .duration(250)
@@ -277,6 +282,7 @@ function load(us, data, deaths) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
+            .attr("data-legend", "Confirmed Cases")
 
         line.append("path")
             .datum(dat_deaths)
@@ -287,6 +293,12 @@ function load(us, data, deaths) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
+            .attr("data-legend", "Deaths")
+        
+        line.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(10, 10)")
+            .call(d3.legend)
     }
     
     update(dates.length - 1)
