@@ -66,7 +66,7 @@ legend.append("rect")
     .attr("height", ls_h)
     .style("fill", function(d, i) { return color(d) })
 
-labels = ["0", "1", "10", "100", "1000", "10000", "100000", "1000000"]
+labels = ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"]
 legend.append("text")
     .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 70)
