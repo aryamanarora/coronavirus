@@ -94,7 +94,91 @@ function unzoomed() {
 
 var clicked_obj = null
 
-function load(us, data, deaths) {
+var search = null
+var topo = null
+
+function load(us, data) {
+    // name list for autocomplete
+    topo = topojson.feature(us, us.objects.counties).features
+    var names = []
+    topo.forEach(function (d) {
+        if (data.get(d.id)) names.push(data.get(d.id).name.toLowerCase().split(',')[0])
+        else names.push("")
+    })
+
+    function get_names(needle) {
+        needle = needle.toLowerCase()
+        results = []
+        names.forEach(function (name, idx) {
+            if (results.length == 5) return
+            if (name.includes(needle)) {
+                results.push(idx)
+            }
+        })
+        return results
+    }
+
+    // counties and states drawn on svg
+    counties = g.selectAll("path")
+        .data(topo)
+        .enter()
+        .append("path")
+            .attr("d", path)
+            .attr("class", "county")
+            .attr("id", function (d) {
+                dates.forEach(function (date) {
+                    if (!data.get(d.id)) return
+                    if (!(date in data.get(d.id))) {
+                        x = data.get(d.id)
+                        x[date] = {"cases": 0, "deaths": 0}
+                        data.set(d.id, x)
+                    }
+                })
+                return "id-" + d.id 
+            })
+            .on("click", clicked)
+
+    states = g.append("path")
+        .datum(topojson.feature(us, us.objects.states, function(a, b) { return a !== b }))
+            .attr("class", "states")
+            .attr("d", path)
+
+    // New York City is a special case, the five boroughs are treated as one object
+    new_york = [36081, 36005, 36047, 36085]
+    new_york.forEach(d => {
+        data.set(d, data.get(36061))
+        d3.select("#id-" + d)
+            .attr("id", "id-36061")
+    })
+    
+    // search box
+    names = new Map([...names.entries()].sort())
+    search = d3.select(".search")
+        .append("input")
+            .attr("type", "text")
+            .attr("class", "form-control")
+            .attr("placeholder", "County")
+            .style("width", 100)
+            .on("keyup", function() {
+                var d = this.value
+                d3.select(".search").select(".dropdown-menu").remove()
+                if (d == "") return
+                var add = d3.select(".search")
+                    .append("div")
+                    .attr("class", "dropdown-menu")
+                    .style("display", "inline")
+                res = get_names(d)
+                res.forEach(function (x) {
+                    add.append("a")
+                        .attr("class", "dropdown-item")
+                        .attr("href", "#")
+                        .text(data.get(topo[x].id).name)
+                        .on("click", function () {
+                            console.log()
+                            clicked(topo[x])
+                        })
+                })
+            })
 
     var slider = d3.select(".slider")
         .append("input")
@@ -112,13 +196,12 @@ function load(us, data, deaths) {
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
-            infobar.selectAll("g").remove();
             infobar.transition()
                 .duration(250)
                 .style("opacity", 0)
             return
         }
-
+        infobar.selectAll("*").remove();
         infobar.transition()
             .duration(250)
             .style("opacity", 1)
@@ -143,38 +226,8 @@ function load(us, data, deaths) {
         update(slider.property("value"))
     }
     
-    counties = g.selectAll("path")
-        .data(topojson.feature(us, us.objects.counties).features)
-        .enter()
-        .append("path")
-            .attr("d", path)
-            .attr("class", "county")
-            .attr("id", function (d) {
-                dates.forEach(function (date) {
-                    if (!data.get(d.id)) return
-                    if (!(date in data.get(d.id))) {
-                        x = data.get(d.id)
-                        x[date] = {"cases": 0, "deaths": 0}
-                        data.set(d.id, x)
-                    }
-                })
-                return "id-" + d.id 
-            })
-            .on("click", clicked)
-
-    states = g.append("path")
-        .datum(topojson.feature(us, us.objects.states, function(a, b) { return a !== b }))
-            .attr("class", "states")
-            .attr("d", path)
-
-    new_york = [36081, 36005, 36047, 36085]
-    new_york.forEach(d => {
-        data.set(d, data.get(36061))
-        d3.select("#id-" + d)
-            .attr("id", "id-36061")
-    })
-    
     function update(key){
+        infobar.selectAll("*").remove();
         slider.property("value", key)
         d3.select(".date").text(dates[key])
         counties.style("fill", function(d) {
@@ -184,7 +237,7 @@ function load(us, data, deaths) {
                 return color(0)
             })
             .on("mouseover", function(d) {
-                var obj = d3.select("#id-" + d.id)
+                var obj = d3.selectAll("#id-" + data.get(d.id).id)
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
 
@@ -205,8 +258,8 @@ function load(us, data, deaths) {
                     .style("top", (d3.event.pageY - 28) + "px")
             })
             .on("mouseout", function (d) {
-                var obj = d3.select("#id-" + d.id)
-                if (clicked_obj != d.id) {
+                var obj = d3.selectAll("#id-" + data.get(d.id).id)
+                if (clicked_obj != data.get(d.id).id) {
                     if (clicked_obj) obj.transition()
                         .duration(150)
                         .style("opacity", 0.5)
@@ -223,15 +276,14 @@ function load(us, data, deaths) {
         if (clicked_obj == null) return
 
         d = {"id": clicked_obj}
-        console.log(data.get(d.id)[dates[key]])
-        infobar.html(
-            "<p><h3>" + data.get(d.id).name + "</h3><br>" +
-                data.get(d.id)[dates[key]].cases.toLocaleString() + " confirmed case" +
-                (data.get(d.id)[dates[key]].cases == 1 ? "" : "s") + "<br>" +
-                data.get(d.id)[dates[key]].deaths.toLocaleString() + " death" +
-                (data.get(d.id)[dates[key]].deaths == 1 ? "" : "s") + "<br>" +
-                data.get(d.id).population.toLocaleString() + " people" +
-                "</p><br>")
+
+        var cases = data.get(d.id)[dates[key]].cases
+        var deaths = data.get(d.id)[dates[key]].deaths
+
+        infobar.append("h3").text(data.get(d.id).name)
+        infobar.append("p").text(cases.toLocaleString() + " confirmed case" + (cases == 1 ? "" : "s"))
+        infobar.append("p").text(deaths.toLocaleString() + " death" + (deaths == 1 ? "" : "s"))
+        infobar.append("p").text(data.get(d.id).population.toLocaleString() + " people")
 
         var line = infobar.append("svg")
             .attr("height", graph_height + 50)
