@@ -1,4 +1,5 @@
 var dates = []
+var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 var container = d3.select("#map")
     .attr("width", 1000)
@@ -74,7 +75,7 @@ g = svg.append("g")
 
 var zoom = d3.zoom()
     .extent([[0, 0], [width, height]])
-    .scaleExtent([1, 8])
+    .scaleExtent([1, 10])
     .on("zoom", zoomed)
 
 svg.call(zoom)
@@ -102,7 +103,6 @@ function load(us, data) {
     topo = topojson.feature(us, us.objects.counties).features
     var names = []
     topo.forEach(function (d) {
-        console.log(+d.id)
         if (data.get(+d.id)) names.push(data.get(+d.id).name.toLowerCase().split(',')[0])
         else names.push("")
     })
@@ -174,7 +174,6 @@ function load(us, data) {
                         .attr("href", "#")
                         .text(data.get(+topo[x].id).name)
                         .on("click", function () {
-                            console.log()
                             clicked(topo[x])
                         })
                 })
@@ -230,7 +229,8 @@ function load(us, data) {
     function update(key){
         infobar.selectAll("*").remove();
         slider.property("value", key)
-        d3.select(".date").text(dates[key])
+        d3.select(".date")
+            .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
         counties.style("fill", function(d) {
                 if (data.get(+d.id) && dates[key] in data.get(+d.id)) {
                     return color(data.get(+d.id)[dates[key]].cases)
@@ -318,7 +318,7 @@ function load(us, data) {
             .call(d3.axisBottom(x).tickFormat((d, i) => dates[d]))
             .selectAll(".tick text")
             .style("text-anchor", "end")
-            .attr("transform", "rotate(-45) translate(-6, -10)")
+            .attr("transform", "rotate(-45) translate(-3, 0)")
             
         var y = d3.scaleLinear()
             .domain([0, d3.max(dat, function(d) {
@@ -399,7 +399,6 @@ d3.json("counties-10m.json").then(function(us) {
                     data.set(key, {"name": value.name, "population": value.population, "id": key})
                 }
             })
-            console.log(data)
             load(us, data)
         })
     })
