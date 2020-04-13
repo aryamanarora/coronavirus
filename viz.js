@@ -158,7 +158,6 @@ function load(us, data) {
             .attr("type", "text")
             .attr("class", "form-control")
             .attr("placeholder", "County")
-            .style("width", 100)
             .on("keyup", function() {
                 var d = this.value
                 d3.select(".search").select(".dropdown-menu").remove()
