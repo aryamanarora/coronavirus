@@ -6,6 +6,8 @@ It is built using [D3.js](https://d3js.org/), a JavaScript library for making da
 
 ![](images/homepage.png)
 
+![](images/zoomed.png)
+
 ## Local development
 
 ```bash
