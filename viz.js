@@ -1,13 +1,4 @@
-var dates = ["1/22/20", "1/23/20", "1/24/20", "1/25/20", "1/26/20", "1/27/20", "1/28/20",
-    "1/29/20", "1/30/20", "1/31/20", "2/1/20", "2/2/20", "2/3/20", "2/4/20", "2/5/20",
-    "2/6/20", "2/7/20", "2/8/20", "2/9/20", "2/10/20", "2/11/20", "2/12/20", "2/13/20",
-    "2/14/20", "2/15/20", "2/16/20", "2/17/20", "2/18/20", "2/19/20", "2/20/20", "2/21/20",
-    "2/22/20", "2/23/20", "2/24/20", "2/25/20", "2/26/20", "2/27/20", "2/28/20", "2/29/20",
-    "3/1/20", "3/2/20", "3/3/20", "3/4/20", "3/5/20", "3/6/20", "3/7/20", "3/8/20", "3/9/20",
-    "3/10/20", "3/11/20", "3/12/20", "3/13/20", "3/14/20", "3/15/20", "3/16/20", "3/17/20",
-    "3/18/20", "3/19/20", "3/20/20", "3/21/20", "3/22/20", "3/23/20", "3/24/20", "3/25/20",
-    "3/26/20", "3/27/20", "3/28/20", "3/29/20", "3/30/20", "3/31/20", "4/1/20", "4/2/20",
-    "4/3/20", "4/4/20", "4/5/20", "4/6/20", "4/7/20", "4/8/20", "4/9/20", "4/10/20", "4/11/20"]
+var dates = []
 
 var container = d3.select("#map")
     .attr("width", 1000)
@@ -104,8 +95,6 @@ function unzoomed() {
 var clicked_obj = null
 
 function load(us, data, deaths) {
-    data = new Map(data)
-    deaths = new Map(deaths)
 
     var slider = d3.select(".slider")
         .append("input")
@@ -136,7 +125,7 @@ function load(us, data, deaths) {
 
         clicked_obj = data.get(d.id).id
         
-        counties.style("opacity", "0.5")
+        counties.style("opacity", 0.5)
         d3.selectAll("#id-" + data.get(d.id).id)
             .style("opacity", "1")
 
@@ -160,7 +149,17 @@ function load(us, data, deaths) {
         .append("path")
             .attr("d", path)
             .attr("class", "county")
-            .attr("id", function (d) { return "id-" + d.id })
+            .attr("id", function (d) {
+                dates.forEach(function (date) {
+                    if (!data.get(d.id)) return
+                    if (!(date in data.get(d.id))) {
+                        x = data.get(d.id)
+                        x[date] = {"cases": 0, "deaths": 0}
+                        data.set(d.id, x)
+                    }
+                })
+                return "id-" + d.id 
+            })
             .on("click", clicked)
 
     states = g.append("path")
@@ -171,37 +170,31 @@ function load(us, data, deaths) {
     new_york = [36081, 36005, 36047, 36085]
     new_york.forEach(d => {
         data.set(d, data.get(36061))
-        deaths.set(d, deaths.get(36061))
         d3.select("#id-" + d)
             .attr("id", "id-36061")
     })
-
-    dukes_and_nantucket = [25019]
-    dukes_and_nantucket.forEach(d => {
-        data.set(d, data.get(25007))
-        deaths.set(d, deaths.get(25007))
-        d3.select("#id-" + d)
-            .attr("id", "id-25007")
-    })
     
     function update(key){
-        console.log(key)
         slider.property("value", key)
         d3.select(".date").text(dates[key])
         counties.style("fill", function(d) {
-                if (data.get(d.id)) {
-                    return color(data.get(d.id)[dates[key]])
+                if (data.get(d.id) && dates[key] in data.get(d.id)) {
+                    return color(data.get(d.id)[dates[key]].cases)
                 }
                 return color(0)
             })
             .on("mouseover", function(d) {
+                var obj = d3.select("#id-" + d.id)
+                if (clicked_obj) obj.style("opacity", 1)
+                else obj.style("opacity", 0.2)
+
                 tooltip.transition()
                     .duration(250)
                     .style("opacity", 1)
                 tooltip.html(
                     "<p><strong>" + data.get(d.id).name + "</strong><br>" +
-                        data.get(d.id)[dates[key]].toLocaleString() + " case" +
-                        (data.get(d.id)[dates[key]] == 1 ? "" : "s") +
+                        data.get(d.id)[dates[key]].cases.toLocaleString() + " case" +
+                        (data.get(d.id)[dates[key]].cases == 1 ? "" : "s") +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
@@ -212,6 +205,16 @@ function load(us, data, deaths) {
                     .style("top", (d3.event.pageY - 28) + "px")
             })
             .on("mouseout", function (d) {
+                var obj = d3.select("#id-" + d.id)
+                if (clicked_obj != d.id) {
+                    if (clicked_obj) obj.transition()
+                        .duration(150)
+                        .style("opacity", 0.5)
+                    else obj.transition()
+                        .duration(150)
+                        .style("opacity", 1)
+                }
+
                 tooltip.transition()
                     .duration(250)
                     .style("opacity", 0)
@@ -220,12 +223,13 @@ function load(us, data, deaths) {
         if (clicked_obj == null) return
 
         d = {"id": clicked_obj}
+        console.log(data.get(d.id)[dates[key]])
         infobar.html(
             "<p><h3>" + data.get(d.id).name + "</h3><br>" +
-                data.get(d.id)[dates[key]].toLocaleString() + " confirmed case" +
-                (data.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
-                deaths.get(d.id)[dates[key]].toLocaleString() + " death" +
-                (deaths.get(d.id)[dates[key]] == 1 ? "" : "s") + "<br>" +
+                data.get(d.id)[dates[key]].cases.toLocaleString() + " confirmed case" +
+                (data.get(d.id)[dates[key]].cases == 1 ? "" : "s") + "<br>" +
+                data.get(d.id)[dates[key]].deaths.toLocaleString() + " death" +
+                (data.get(d.id)[dates[key]].deaths == 1 ? "" : "s") + "<br>" +
                 data.get(d.id).population.toLocaleString() + " people" +
                 "</p><br>")
 
@@ -239,7 +243,7 @@ function load(us, data, deaths) {
         dat_deaths = []
         start = dates.length
         for (var id = 0; id < dates.length; id++) {
-            if (data.get(d.id)[dates[id]] > 0) {
+            if (data.get(d.id)[dates[id]].cases > 0) {
                 if (start == dates.length) {
                     dat.push({"x": id - 1, "y": 0})
                     dat_deaths.push({"x": id - 1, "y": 0})
@@ -247,8 +251,8 @@ function load(us, data, deaths) {
                 }
             }
             if (start != dates.length) {
-                dat.push({"x": id, "y": data.get(d.id)[dates[id]]})
-                dat_deaths.push({"x": id, "y": deaths.get(d.id)[dates[id]]})
+                dat.push({"x": id, "y": data.get(d.id)[dates[id]].cases})
+                dat_deaths.push({"x": id, "y": data.get(d.id)[dates[id]].deaths})
             }
         }
         
@@ -282,7 +286,6 @@ function load(us, data, deaths) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
-            .attr("data-legend", "Confirmed Cases")
 
         line.append("path")
             .datum(dat_deaths)
@@ -293,48 +296,58 @@ function load(us, data, deaths) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
-            .attr("data-legend", "Deaths")
         
-        line.append("g")
-            .attr("class", "legend")
-            .attr("transform", "translate(10, 10)")
-            .call(d3.legend)
+        if (key - start >= -1) {
+            line.append("circle")
+                .attr("cx", x(key))
+                .attr("cy", y(dat[key - start + 1].y))
+                .attr("r", 4)
+                .style("fill", "steelblue")
+            line.append("circle")
+                .attr("cx", x(key))
+                .attr("cy", y(dat_deaths[key - start + 1].y))
+                .attr("r", 4)
+                .style("fill", "red")
+        }
     }
     
     update(dates.length - 1)
 }
 
+var data = new Map()
+
 d3.json("us.json").then(function(us) {
     d3.csv("lookup.csv", function (d) {
-        return [+d.UID, +d.Population]
+        return [+d.FIPS, {"population": +d.Population, "name": d.Admin2 + ", " + d.Province_State}]
     }).then(function(pop) {
         pop = new Map(pop)
-        d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv", function(d) {
-            ret = {'name': d["Admin2"] + ", " + d["Province_State"]}
-            dates.forEach(function (date) {
-                ret[date] = +d[date]
-            })
-            ret["population"] = pop.get(+d.UID)
-            ret["id"] = +d.FIPS
-            if (d.UID == '84070002') {
-                ret["id"] = 25007
-                return [25007, ret]
+        d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", function(d) {
+            d.date = d.date.slice(5)
+            if (d.county === "New York City") d.fips = 36061
+            if (!dates.includes(d.date)) {
+                dates.push(d.date)
             }
-            return [+d.FIPS, ret]
-        }).then(function(data) {
-            d3.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv", function(d) {
-                ret = {}
-                dates.forEach(function (date) {
-                    ret[date] = +d[date]
-                })
-                if (d.UID == '84070002') {
-                    ret["id"] = 25007
-                    return [25007, ret]
+            if (data.get(+d.fips)) {
+                x = data.get(+d.fips)
+                x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
+                data.set(+d.fips, x)
+            }
+            else {
+                x = {}
+                x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
+                x["name"] = pop.get(+d.fips).name
+                x["id"] = +d.fips
+                x["population"] = pop.get(+d.fips).population
+                data.set(+d.fips, x)
+            }
+        }).then(function (d) {
+            pop.forEach(function (value, key) {
+                if (!data.get(key)) {
+                    data.set(key, {"name": value.name, "population": value.population, "id": key})
                 }
-                return [+d.FIPS, ret]
-            }).then(function(deaths) {
-                load(us, data, deaths)
             })
+            console.log(data)
+            load(us, data)
         })
     })
 })

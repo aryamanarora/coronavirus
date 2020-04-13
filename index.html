@@ -18,11 +18,6 @@ body, h1, h2, h3, p {
   font-weight: 400;
 }
 
-.county {
-  stroke-width: 0px;
-  stroke-opacity: 0;
-}
-
 #content {
   margin: 5px;
   padding: 20px;
@@ -56,6 +51,10 @@ h3 {
 
 p {
   margin: 10px 0px 0px 0px;
+}
+
+.counties {
+  position: absolute;
 }
 
 
@@ -109,7 +108,7 @@ input {
 }
 </style>
 
-<div style="width: 100%; margin: 10px;">
+<div style="width: 90%; margin: 10px;">
     <h1>2020 Coronavirus Pandemic in the United States</h1>
     <div id="info">
       <h2 class="date"></h2>
@@ -127,8 +126,8 @@ input {
         </td>
       </tr>
     </table>
-    <p><b>Source</b>: Coronavirus (COVID-19) Global Cases by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University (JHU)</p>
-    <p><b>Hyperlink</b>: <a href="arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6">arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6</a></p>
+    <p>Data from The New York Times, based on reports from state and local health agencies.</p>
+    <p><b>Hyperlink</b>: <a href="https://github.com/nytimes/covid-19-data">https://github.com/nytimes/covid-19-data</a></p>
     <script src="viz.js"></script>
     <br>
  <p>According to the <b>World Health Organization</b> (<b>WHO</b>), <i>confirmed case</i> is defined as, “a person with laboratory confirmation of COVID-19 [coronavirus disease 2019] infection, irrespective of clinical signs and symptoms.”
