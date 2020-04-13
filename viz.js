@@ -27,7 +27,7 @@ var tooltip = d3.select("body").append("div")
 var path = d3.geoPath()
     .projection(projection)
     
-var color_helper = d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"])
+var color_helper = d3.scaleLog([1, 100, 10000, 1000000], ["#fef0d9", "#fdbb84", "#ef6548", "#990000"])
 function color(num) {
     if (num == 0 || num == null) return "white"
     return color_helper(num)
@@ -182,6 +182,7 @@ function load(us, data) {
 
     var slider = d3.select(".slider")
         .append("input")
+            .attr("class", "form-control-range")
             .attr("type", "range")
             .attr("min", 0)
             .attr("max", dates.length - 1)
