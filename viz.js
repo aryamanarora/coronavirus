@@ -85,7 +85,7 @@ function zoomed() {
 }
 
 function unzoomed() {
-    svg.transition().duration(750).call(
+    svg.transition().duration(1000).call(
         zoom.transform,
         d3.zoomIdentity,
         d3.zoomTransform(svg.node()).invert([width / 2, height / 2])
@@ -102,7 +102,8 @@ function load(us, data) {
     topo = topojson.feature(us, us.objects.counties).features
     var names = []
     topo.forEach(function (d) {
-        if (data.get(d.id)) names.push(data.get(d.id).name.toLowerCase().split(',')[0])
+        console.log(+d.id)
+        if (data.get(+d.id)) names.push(data.get(+d.id).name.toLowerCase().split(',')[0])
         else names.push("")
     })
 
@@ -127,14 +128,14 @@ function load(us, data) {
             .attr("class", "county")
             .attr("id", function (d) {
                 dates.forEach(function (date) {
-                    if (!data.get(d.id)) return
-                    if (!(date in data.get(d.id))) {
-                        x = data.get(d.id)
+                    if (!data.get(+d.id)) return
+                    if (!(date in data.get(+d.id))) {
+                        x = data.get(+d.id)
                         x[date] = {"cases": 0, "deaths": 0}
-                        data.set(d.id, x)
+                        data.set(+d.id, x)
                     }
                 })
-                return "id-" + d.id 
+                return "id-" + +d.id 
             })
             .on("click", clicked)
 
@@ -157,7 +158,7 @@ function load(us, data) {
         .append("input")
             .attr("type", "text")
             .attr("class", "form-control")
-            .attr("placeholder", "County")
+            .attr("placeholder", "County (or County-Equivalent)")
             .on("keyup", function() {
                 var d = this.value
                 d3.select(".search").select(".dropdown-menu").remove()
@@ -171,7 +172,7 @@ function load(us, data) {
                     add.append("a")
                         .attr("class", "dropdown-item")
                         .attr("href", "#")
-                        .text(data.get(topo[x].id).name)
+                        .text(data.get(+topo[x].id).name)
                         .on("click", function () {
                             console.log()
                             clicked(topo[x])
@@ -191,7 +192,7 @@ function load(us, data) {
             })
 
     function clicked(d) {
-        if (data.get(d.id).id == clicked_obj) { 
+        if (data.get(+d.id).id == clicked_obj) { 
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
@@ -205,19 +206,19 @@ function load(us, data) {
             .duration(250)
             .style("opacity", 1)
 
-        clicked_obj = data.get(d.id).id
+        clicked_obj = data.get(+d.id).id
         
         counties.style("opacity", 0.5)
-        d3.selectAll("#id-" + data.get(d.id).id)
+        d3.selectAll("#id-" + data.get(+d.id).id)
             .style("opacity", "1")
 
         const [[x0, y0], [x1, y1]] = path.bounds(d)
         d3.event.stopPropagation()
-        svg.transition().duration(750).call(
+        svg.transition().duration(1000).call(
             zoom.transform,
             d3.zoomIdentity
                 .translate(width / 2, height / 2)
-                .scale(Math.min(6, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
+                .scale(Math.min(10, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height)))
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
             d3.mouse(svg.node())
         )
@@ -230,13 +231,13 @@ function load(us, data) {
         slider.property("value", key)
         d3.select(".date").text(dates[key])
         counties.style("fill", function(d) {
-                if (data.get(d.id) && dates[key] in data.get(d.id)) {
-                    return color(data.get(d.id)[dates[key]].cases)
+                if (data.get(+d.id) && dates[key] in data.get(+d.id)) {
+                    return color(data.get(+d.id)[dates[key]].cases)
                 }
                 return color(0)
             })
             .on("mouseover", function(d) {
-                var obj = d3.selectAll("#id-" + data.get(d.id).id)
+                var obj = d3.selectAll("#id-" + data.get(+d.id).id)
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
 
@@ -244,9 +245,9 @@ function load(us, data) {
                     .duration(250)
                     .style("opacity", 1)
                 tooltip.html(
-                    "<p><strong>" + data.get(d.id).name + "</strong><br>" +
-                        data.get(d.id)[dates[key]].cases.toLocaleString() + " case" +
-                        (data.get(d.id)[dates[key]].cases == 1 ? "" : "s") +
+                    "<p><strong>" + data.get(+d.id).name + "</strong><br>" +
+                        data.get(+d.id)[dates[key]].cases.toLocaleString() + " confirmed case" +
+                        (data.get(+d.id)[dates[key]].cases == 1 ? "" : "s") +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
@@ -257,8 +258,8 @@ function load(us, data) {
                     .style("top", (d3.event.pageY - 28) + "px")
             })
             .on("mouseout", function (d) {
-                var obj = d3.selectAll("#id-" + data.get(d.id).id)
-                if (clicked_obj != data.get(d.id).id) {
+                var obj = d3.selectAll("#id-" + data.get(+d.id).id)
+                if (clicked_obj != data.get(+d.id).id) {
                     if (clicked_obj) obj.transition()
                         .duration(150)
                         .style("opacity", 0.5)
@@ -276,13 +277,13 @@ function load(us, data) {
 
         d = {"id": clicked_obj}
 
-        var cases = data.get(d.id)[dates[key]].cases
-        var deaths = data.get(d.id)[dates[key]].deaths
+        var cases = data.get(+d.id)[dates[key]].cases
+        var deaths = data.get(+d.id)[dates[key]].deaths
 
-        infobar.append("h3").text(data.get(d.id).name)
+        infobar.append("h3").text(data.get(+d.id).name)
         infobar.append("p").text(cases.toLocaleString() + " confirmed case" + (cases == 1 ? "" : "s"))
         infobar.append("p").text(deaths.toLocaleString() + " death" + (deaths == 1 ? "" : "s"))
-        infobar.append("p").text(data.get(d.id).population.toLocaleString() + " people")
+        infobar.append("p").text(data.get(+d.id).population.toLocaleString() + " people")
 
         var line = infobar.append("svg")
             .attr("height", graph_height + 50)
@@ -294,7 +295,7 @@ function load(us, data) {
         dat_deaths = []
         start = dates.length
         for (var id = 0; id < dates.length; id++) {
-            if (data.get(d.id)[dates[id]].cases > 0) {
+            if (data.get(+d.id)[dates[id]].cases > 0) {
                 if (start == dates.length) {
                     dat.push({"x": id - 1, "y": 0})
                     dat_deaths.push({"x": id - 1, "y": 0})
@@ -302,8 +303,8 @@ function load(us, data) {
                 }
             }
             if (start != dates.length) {
-                dat.push({"x": id, "y": data.get(d.id)[dates[id]].cases})
-                dat_deaths.push({"x": id, "y": data.get(d.id)[dates[id]].deaths})
+                dat.push({"x": id, "y": data.get(+d.id)[dates[id]].cases})
+                dat_deaths.push({"x": id, "y": data.get(+d.id)[dates[id]].deaths})
             }
         }
         
@@ -367,7 +368,7 @@ function load(us, data) {
 
 var data = new Map()
 
-d3.json("us.json").then(function(us) {
+d3.json("counties-10m.json").then(function(us) {
     d3.csv("lookup.csv", function (d) {
         return [+d.FIPS, {"population": +d.Population, "name": d.Admin2 + ", " + d.Province_State}]
     }).then(function(pop) {
