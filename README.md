@@ -4,6 +4,8 @@ This is a dashboard for coronavirus cases by county (and county-equivalent) in t
 
 It is built using [D3.js](https://d3js.org/), a JavaScript library for making data-driven documents.
 
+![](images/homepage.png)
+
 ## Local development
 
 ```bash

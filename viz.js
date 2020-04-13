@@ -369,8 +369,8 @@ function load(us, data) {
 
 var data = new Map()
 
-d3.json("counties-10m.json").then(function(us) {
-    d3.csv("lookup.csv", function (d) {
+d3.json("data/counties-10m.json").then(function(us) {
+    d3.csv("data/lookup.csv", function (d) {
         return [+d.FIPS, {"population": +d.Population, "name": d.Admin2 + ", " + d.Province_State}]
     }).then(function(pop) {
         pop = new Map(pop)
