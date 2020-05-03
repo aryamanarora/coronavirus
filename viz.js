@@ -181,7 +181,7 @@ function load(us, data) {
 
     var slider = d3.select(".slider")
         .append("input")
-            .attr("class", "form-control-range")
+            .attr("class", "custom-range")
             .attr("type", "range")
             .attr("min", 0)
             .attr("max", dates.length - 1)
