@@ -27,7 +27,7 @@ var tooltip = d3.select("body").append("div")
 
 var path = d3.geoPath()
     .projection(projection)
-    
+
 var color_helper = d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"])
 function color(num) {
     if (num == 0 || num == null) return "white"
@@ -187,8 +187,18 @@ function load(us, data) {
             .attr("max", dates.length - 1)
             .attr("step", 1)
             .on("input", function() {
-                var date = this.value
-                update(date)
+                update(slider.property('value'), interval.property('value'))
+            })
+    
+    var interval = d3.select(".slider-interval")
+        .append("input")
+            .attr("class", "custom-range")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", 30)
+            .attr("step", 1)
+            .on("input", function() {
+                update(slider.property('value'), interval.property('value'))
             })
 
     function clicked(d) {
@@ -225,20 +235,37 @@ function load(us, data) {
         
         update(slider.property("value"))
     }
-    
-    function update(key){
+  
+    // Return the number of cases or deaths between a range of days
+    function getData(item, key, property, interval) {
+        const startDate = dates[key - interval];
+        const endDate = dates[key];
+        
+        if (item && endDate in item) {
+            const start = (item[startDate] || {})[property] || 0;
+            const end = (item[endDate] || {})[property] || 0;
+            
+            const total = end && start ? end - start : end; 
+            return Math.abs(total);
+        }
+    }
+
+    function update(key, interval){
         infobar.selectAll("*").remove();
         slider.property("value", key)
         d3.select(".date")
             .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
+        d3.select(".interval")
+            .text(interval ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
-                if (data.get(+d.id) && dates[key] in data.get(+d.id)) {
-                    return color(data.get(+d.id)[dates[key]].cases)
-                }
-                return color(0)
+                const item = data.get(+d.id);
+                return color(getData(item, key, 'cases', interval))
             })
             .on("mouseover", function(d) {
                 var obj = d3.selectAll("#id-" + data.get(+d.id).id)
+                var item = data.get(+d.id);
+                var cases = getData(item, key, 'cases', interval);
+
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
 
@@ -247,8 +274,8 @@ function load(us, data) {
                     .style("opacity", 1)
                 tooltip.html(
                     "<p><strong>" + data.get(+d.id).name + "</strong><br>" +
-                        data.get(+d.id)[dates[key]].cases.toLocaleString() + " confirmed case" +
-                        (data.get(+d.id)[dates[key]].cases == 1 ? "" : "s") +
+                        cases.toLocaleString() + " confirmed case" +
+                        (cases == 1 ? "" : "s") +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
@@ -388,9 +415,9 @@ d3.json("data/counties-10m.json").then(function(us) {
             else {
                 x = {}
                 x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
-                x["name"] = pop.get(+d.fips).name
+                x["name"] = (pop.get(+d.fips) || {}).name || 'No name'
                 x["id"] = +d.fips
-                x["population"] = pop.get(+d.fips).population
+                x["population"] = (pop.get(+d.fips) || {}).population || 'Unknown population'
                 data.set(+d.fips, x)
             }
         }).then(function (d) {
