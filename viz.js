@@ -233,7 +233,7 @@ function load(us, data) {
             d3.mouse(svg.node())
         )
         
-        update(slider.property("value"))
+        update(slider.property("value", interval.property('value')))
     }
   
     // Return the number of cases or deaths between a range of days
@@ -391,7 +391,7 @@ function load(us, data) {
         }
     }
     
-    update(dates.length - 1)
+    update(dates.length - 1, interval.property('value'))
 }
 
 var data = new Map()
