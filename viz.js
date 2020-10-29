@@ -30,7 +30,7 @@ var tooltip = d3.select("body").append("div")
 var path = d3.geoPath()
     .projection(projection)
 
-var color_helper = perCapita 
+var color_helper = perCapita
     ? d3.scaleLog([0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"])
     : d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]);
 
@@ -58,7 +58,7 @@ function linepos(x) {
     x = Math.log10(x)
     return 854 - x * ls_w
 }
-		 
+
 legend.append("rect")
     .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 30)
@@ -67,7 +67,7 @@ legend.append("rect")
     .style("fill", function(d, i) { return color(d) })
 
 labels = perCapita
-    ? ["0%", ".001%", ".001%", ".01%", ".1%" ] 
+    ? ["0%", ".001%", ".001%", ".01%", ".1%" ]
     : ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"];
 
 legend.append("text")
@@ -147,7 +147,7 @@ function load(us, data) {
                         data.set(+d.id, x)
                     }
                 })
-                return "id-" + +d.id 
+                return "id-" + +d.id
             })
             .on("click", clicked)
 
@@ -163,7 +163,7 @@ function load(us, data) {
         d3.select("#id-" + d)
             .attr("id", "id-36061")
     })
-    
+
     // search box
     names = new Map([...names.entries()].sort())
     search = d3.select(".search")
@@ -201,20 +201,21 @@ function load(us, data) {
             .on("input", function() {
                 update(slider.property('value'), interval.property('value'))
             })
-    
+
     var interval = d3.select(".slider-interval")
         .append("input")
             .attr("class", "custom-range")
             .attr("type", "range")
             .attr("min", 0)
-            .attr("max", 30)
+            .attr("max", 121)
+            .property('value', 121)
             .attr("step", 1)
             .on("input", function() {
                 update(slider.property('value'), interval.property('value'))
             })
 
     function clicked(d) {
-        if (data.get(+d.id).id == clicked_obj) { 
+        if (data.get(+d.id).id == clicked_obj) {
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
@@ -229,7 +230,7 @@ function load(us, data) {
             .style("opacity", 1)
 
         clicked_obj = data.get(+d.id).id
-        
+
         counties.style("opacity", 0.5)
         d3.selectAll("#id-" + data.get(+d.id).id)
             .style("opacity", "1")
@@ -244,10 +245,10 @@ function load(us, data) {
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
             d3.mouse(svg.node())
         )
-        
+
         update(slider.property("value", interval.property('value')))
     }
-  
+
     // Return the number of cases or deaths between a range of days
     function getData(item, key, property, interval, perCapita) {
         const startDate = dates[key - interval];
@@ -256,14 +257,14 @@ function load(us, data) {
         if (item && endDate in item) {
             var start = (item[startDate] || {})[property] || 0;
             var end = (item[endDate] || {})[property] || 0;
-        
+
             if (perCapita) {
-                const population = item.population || Infinity; 
+                const population = item.population || Infinity;
                 start = start / population;
                 end = end / population;
             }
 
-            const total = end && start ? end - start : end; 
+            const total = end && start ? end - start : end;
             return Math.abs(total);
         }
     }
@@ -274,7 +275,7 @@ function load(us, data) {
         d3.select(".date")
             .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
         d3.select(".interval")
-            .text(interval ? `Last ${interval} days` : 'All data')
+            .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
                 const item = data.get(+d.id);
                 return color(getData(item, key, 'cases', interval, perCapita))
@@ -318,7 +319,7 @@ function load(us, data) {
                     .duration(250)
                     .style("opacity", 0)
             })
-        
+
         if (clicked_obj == null) return
 
         d = {"id": clicked_obj}
@@ -353,7 +354,7 @@ function load(us, data) {
                 dat_deaths.push({"x": id, "y": data.get(+d.id)[dates[id]].deaths})
             }
         }
-        
+
         var x = d3.scaleLinear()
             .domain([start - 1, dates.length - 1])
             .range([0, graph_width])
@@ -364,7 +365,7 @@ function load(us, data) {
             .selectAll(".tick text")
             .style("text-anchor", "end")
             .attr("transform", "rotate(-45) translate(-3, 0)")
-            
+
         var y = d3.scaleLinear()
             .domain([0, d3.max(dat, function(d) {
                 return parseInt(d.y)
@@ -394,7 +395,7 @@ function load(us, data) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
-        
+
         if (key - start >= -1) {
             line.append("circle")
                 .attr("cx", x(key))
@@ -408,7 +409,7 @@ function load(us, data) {
                 .style("fill", "red")
         }
     }
-    
+
     update(dates.length - 1, interval.property('value'))
 }
 
