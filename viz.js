@@ -27,7 +27,7 @@ var tooltip = d3.select("body").append("div")
 
 var path = d3.geoPath()
     .projection(projection)
-    
+
 var color_helper = d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"])
 function color(num) {
     if (num == 0 || num == null) return "white"
@@ -50,7 +50,7 @@ function linepos(x) {
     x = Math.log10(x)
     return 854 - x * ls_w
 }
-		 
+
 legend.append("rect")
     .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 30)
@@ -135,7 +135,7 @@ function load(us, data) {
                         data.set(+d.id, x)
                     }
                 })
-                return "id-" + +d.id 
+                return "id-" + +d.id
             })
             .on("click", clicked)
 
@@ -151,7 +151,7 @@ function load(us, data) {
         d3.select("#id-" + d)
             .attr("id", "id-36061")
     })
-    
+
     // search box
     names = new Map([...names.entries()].sort())
     search = d3.select(".search")
@@ -187,12 +187,23 @@ function load(us, data) {
             .attr("max", dates.length - 1)
             .attr("step", 1)
             .on("input", function() {
-                var date = this.value
-                update(date)
+                update(slider.property('value'), interval.property('value'))
+            })
+
+    var interval = d3.select(".slider-interval")
+        .append("input")
+            .attr("class", "custom-range")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", 121)
+            .property('value', 121)
+            .attr("step", 1)
+            .on("input", function() {
+                update(slider.property('value'), interval.property('value'))
             })
 
     function clicked(d) {
-        if (data.get(+d.id).id == clicked_obj) { 
+        if (data.get(+d.id).id == clicked_obj) {
             unzoomed()
             clicked_obj = null
             counties.style("opacity", "1")
@@ -207,7 +218,7 @@ function load(us, data) {
             .style("opacity", 1)
 
         clicked_obj = data.get(+d.id).id
-        
+
         counties.style("opacity", 0.5)
         d3.selectAll("#id-" + data.get(+d.id).id)
             .style("opacity", "1")
@@ -222,23 +233,40 @@ function load(us, data) {
                 .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
             d3.mouse(svg.node())
         )
-        
-        update(slider.property("value"))
+
+        update(slider.property("value", interval.property('value')))
     }
-    
-    function update(key){
+
+    // Return the number of cases or deaths between a range of days
+    function getData(item, key, property, interval) {
+        const startDate = dates[key - interval];
+        const endDate = dates[key];
+
+        if (item && endDate in item) {
+            const start = (item[startDate] || {})[property] || 0;
+            const end = (item[endDate] || {})[property] || 0;
+
+            const total = end && start ? end - start : end;
+            return Math.abs(total);
+        }
+    }
+
+    function update(key, interval){
         infobar.selectAll("*").remove();
         slider.property("value", key)
         d3.select(".date")
             .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
+        d3.select(".interval")
+            .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
-                if (data.get(+d.id) && dates[key] in data.get(+d.id)) {
-                    return color(data.get(+d.id)[dates[key]].cases)
-                }
-                return color(0)
+                const item = data.get(+d.id);
+                return color(getData(item, key, 'cases', interval))
             })
             .on("mouseover", function(d) {
                 var obj = d3.selectAll("#id-" + data.get(+d.id).id)
+                var item = data.get(+d.id);
+                var cases = getData(item, key, 'cases', interval);
+
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
 
@@ -247,8 +275,8 @@ function load(us, data) {
                     .style("opacity", 1)
                 tooltip.html(
                     "<p><strong>" + data.get(+d.id).name + "</strong><br>" +
-                        data.get(+d.id)[dates[key]].cases.toLocaleString() + " confirmed case" +
-                        (data.get(+d.id)[dates[key]].cases == 1 ? "" : "s") +
+                        cases.toLocaleString() + " confirmed case" +
+                        (cases == 1 ? "" : "s") +
                         "</p>")
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
@@ -273,7 +301,7 @@ function load(us, data) {
                     .duration(250)
                     .style("opacity", 0)
             })
-        
+
         if (clicked_obj == null) return
 
         d = {"id": clicked_obj}
@@ -308,7 +336,7 @@ function load(us, data) {
                 dat_deaths.push({"x": id, "y": data.get(+d.id)[dates[id]].deaths})
             }
         }
-        
+
         var x = d3.scaleLinear()
             .domain([start - 1, dates.length - 1])
             .range([0, graph_width])
@@ -319,7 +347,7 @@ function load(us, data) {
             .selectAll(".tick text")
             .style("text-anchor", "end")
             .attr("transform", "rotate(-45) translate(-3, 0)")
-            
+
         var y = d3.scaleLinear()
             .domain([0, d3.max(dat, function(d) {
                 return parseInt(d.y)
@@ -349,7 +377,7 @@ function load(us, data) {
                 .x(function(a) { return x(a.x) })
                 .y(function(a) { return y(a.y) })
             )
-        
+
         if (key - start >= -1) {
             line.append("circle")
                 .attr("cx", x(key))
@@ -363,8 +391,8 @@ function load(us, data) {
                 .style("fill", "red")
         }
     }
-    
-    update(dates.length - 1)
+
+    update(dates.length - 1, interval.property('value'))
 }
 
 var data = new Map()
@@ -388,9 +416,9 @@ d3.json("data/counties-10m.json").then(function(us) {
             else {
                 x = {}
                 x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
-                x["name"] = pop.get(+d.fips).name
+                x["name"] = (pop.get(+d.fips) || {}).name || 'No name'
                 x["id"] = +d.fips
-                x["population"] = pop.get(+d.fips).population
+                x["population"] = (pop.get(+d.fips) || {}).population || 'Unknown population'
                 data.set(+d.fips, x)
             }
         }).then(function (d) {
