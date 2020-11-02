@@ -1,3 +1,5 @@
+const perCapita = true;
+
 var dates = []
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
@@ -28,7 +30,10 @@ var tooltip = d3.select("body").append("div")
 var path = d3.geoPath()
     .projection(projection)
 
-var color_helper = d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"])
+var color_helper = perCapita
+    ? d3.scaleLog([0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"])
+    : d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]);
+
 function color(num) {
     if (num == 0 || num == null) return "white"
     return color_helper(num)
@@ -38,7 +43,10 @@ var legend = d3.select("#legend")
     .attr("width", "1000")
     .attr("height", "100")
     .selectAll("g.legend")
-    .data([0, 1, 10, 100, 1000, 10000, 100000, 1000000])
+    .data(perCapita
+        ? [0.00001, 0.0001, 0.001, 0.01, 0.1]
+        : [0, 1, 10, 100, 1000, 10000, 100000, 1000000]
+    )
     .enter()
     .append("g")
     .attr("class", "legend")
@@ -58,7 +66,10 @@ legend.append("rect")
     .attr("height", ls_h)
     .style("fill", function(d, i) { return color(d) })
 
-labels = ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"]
+labels = perCapita
+    ? ["0%", ".001%", ".001%", ".01%", ".1%" ]
+    : ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"];
+
 legend.append("text")
     .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
     .attr("y", 70)
@@ -77,6 +88,7 @@ var zoom = d3.zoom()
     .extent([[0, 0], [width, height]])
     .scaleExtent([1, 10])
     .on("zoom", zoomed)
+
 
 svg.call(zoom)
 svg.on("click", unzoomed)
@@ -238,13 +250,19 @@ function load(us, data) {
     }
 
     // Return the number of cases or deaths between a range of days
-    function getData(item, key, property, interval) {
+    function getData(item, key, property, interval, perCapita) {
         const startDate = dates[key - interval];
         const endDate = dates[key];
 
         if (item && endDate in item) {
-            const start = (item[startDate] || {})[property] || 0;
-            const end = (item[endDate] || {})[property] || 0;
+            var start = (item[startDate] || {})[property] || 0;
+            var end = (item[endDate] || {})[property] || 0;
+
+            if (perCapita) {
+                const population = item.population || Infinity;
+                start = start / population;
+                end = end / population;
+            }
 
             const total = end && start ? end - start : end;
             return Math.abs(total);
@@ -260,12 +278,12 @@ function load(us, data) {
             .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
                 const item = data.get(+d.id);
-                return color(getData(item, key, 'cases', interval))
+                return color(getData(item, key, 'cases', interval, perCapita))
             })
             .on("mouseover", function(d) {
                 var obj = d3.selectAll("#id-" + data.get(+d.id).id)
                 var item = data.get(+d.id);
-                var cases = getData(item, key, 'cases', interval);
+                var cases = getData(item, key, 'cases', interval, false);
 
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
