@@ -273,7 +273,7 @@ function load(us, data) {
         infobar.selectAll("*").remove();
         slider.property("value", key)
         d3.select(".date")
-            .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
+            .text(dates[key])
         d3.select(".interval")
             .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
@@ -421,7 +421,6 @@ d3.json("data/counties-10m.json").then(function(us) {
     }).then(function(pop) {
         pop = new Map(pop)
         d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", function(d) {
-            d.date = d.date.slice(5)
             if (d.county === "New York City") d.fips = 36061
             if (!dates.includes(d.date)) {
                 dates.push(d.date)
