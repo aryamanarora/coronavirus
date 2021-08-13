@@ -8,7 +8,7 @@ var dates = []
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     
 var paths = {
-    positive: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
+    cases: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
     deaths: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
     vax: "https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_county_condensed_data" 
 }
@@ -35,9 +35,21 @@ var scales =  {
         per_capita:  {
             title: "Percentage of deaths",
             labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
-            color: [[0.0001, 0.001, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
+            color: [[0.0001, 0.0025, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
         }
     },
+    vax: {
+        totals:  {
+            title: "Total vaccinations",
+            labels: [0, 1, 10, 100, 1000, 10000],
+            color: [[1, 100, 100000],  ["#E1EEE5", "#716BA5", "#3A802F"]]
+        },
+        per_capita:  {
+            title: "Percentage of vaccinations",
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.0001, 0.0025, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
+        }
+    }
 };
 
 
@@ -152,6 +164,9 @@ var topo = null
 d3.select('.data.dropdown').on('change', function() {
     var option = d3.select(this).property('value');
     field = option;
+    if (field == 'vax') {
+        loadData(paths.vax);
+    }
     drawLegend();
     update(dates.length - 1, interval.property('value'))
 });
@@ -159,6 +174,7 @@ d3.select('.data.dropdown').on('change', function() {
 d3.select('#percapita').on('change', function() {
     var option = d3.select(this).property('checked');
     perCapita = option;
+
     drawLegend();
     update(dates.length - 1, interval.property('value'))
 });
@@ -470,12 +486,14 @@ function load(us, data) {
     update(dates.length - 1, interval.property('value'))
 }
 
-var data = new Map()
+var data;
 
 // Start with us-counties.csv data
-loadData(paths.positive);
+loadData(paths.cases);
 
 function loadData(path) {
+
+    data = new Map();
 
     // TODO: caching
     d3.json("data/counties-10m.json").then(function(us) {
@@ -484,6 +502,8 @@ function loadData(path) {
         }).then(function(pop) {
             pop = new Map(pop)
             d3.csv(path, function(d) {
+                if (field === 'vax') 
+                    console.log(d);
                 if (d.county === "New York City") d.fips = 36061
                 if (!dates.includes(d.date)) {
                     dates.push(d.date)
