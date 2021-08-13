@@ -2,6 +2,7 @@ var perCapita = true;
 var update = function(){};
 var slider;
 var interval;
+var numDays = 0;
 
 var dates = []
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -15,22 +16,26 @@ var paths = {
 var scales =  {
     cases: {
         totals:  {
+            title: "Total positive tests",
             labels: [0, 1, 10, 100, 1000, 10000, 100000, 1000000],
             color: [[1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
         },
         per_capita:  {
+            title: "Percentage of positive tests per capita",
             labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
             color: [[0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
         }
     },
     deaths: {
         totals:  {
-            labels: [0, 1, 10, 100, 1000, 10000, 100000, 1000000],
+            title: "Total deaths",
+            labels: [0, 1, 10, 100, 1000, 10000],
             color: [[1, 100, 100000],  ["#E1EEE5", "#716BA5", "#3A802F"]]
         },
         per_capita:  {
+            title: "Percentage of deaths",
             labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
-            color: [[0.0001, 0.001, 0.01], ["#E1EEE5", "#716BA5", "#3A802F"]]
+            color: [[0.0001, 0.001, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
         }
     },
 };
@@ -86,6 +91,7 @@ function drawLegend() {
 
     const format = perCapita ? 'per_capita' : 'totals';
     const labels = scales[field][format].labels;
+    const title = scales[field][format].title;
 
     var legend = d3.select("#legend")
         .html("")
@@ -109,14 +115,10 @@ function drawLegend() {
         .attr("y", 70)
         .text(function(d, i){ return labels[i] })
 
-    var legend_title = perCapita 
-        ? "Positive Cases Per Capita"
-        : "Total Positive Cases";
-
     legend.append("text")
         .attr("x", 417)
         .attr("y", 20)
-        .text(function(){return legend_title})
+        .text(function(){return title})
 }
     
 g = svg.append("g")
@@ -150,6 +152,7 @@ var topo = null
 d3.select('.data.dropdown').on('change', function() {
     var option = d3.select(this).property('value');
     field = option;
+    drawLegend();
     update(dates.length - 1, interval.property('value'))
 });
 
@@ -257,8 +260,8 @@ function load(us, data) {
             .attr("class", "custom-range")
             .attr("type", "range")
             .attr("min", 0)
-            .attr("max", 121)
-            .property('value', 121)
+            .attr("max", numDays)
+            .property('value', numDays)
             .attr("step", 1)
             .on("input", function() {
                 update(slider.property('value'), interval.property('value'))
@@ -325,7 +328,7 @@ function load(us, data) {
         d3.select(".date")
             .text(dates[key])
         d3.select(".interval")
-            .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
+            .text(interval && interval !== numDays ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
                 const item = data.get(+d.id);
                 return color(getData(item, key, field, interval, perCapita))
@@ -484,6 +487,7 @@ function loadData(path) {
                 if (d.county === "New York City") d.fips = 36061
                 if (!dates.includes(d.date)) {
                     dates.push(d.date)
+                    numDays += 1;
                 }
                 if (data.get(+d.fips)) {
                     x = data.get(+d.fips)
