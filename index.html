@@ -37,6 +37,16 @@ body, h1, h2, h3, p {
   padding: 0px;
 }
 
+#percapita {
+  width: auto;
+  display: inline;
+  margin: 10px;
+}
+
+.data {
+    padding-bottom: 3px;
+}
+
 h1, h2 {
   line-height: 1em;
   font-size: 1.75em;
@@ -129,6 +139,12 @@ input {
         </td>
         <td style="width: 400px;"></td>
         <td style="width: 300px;">
+          <select class="data dropdown form-control">
+            <option value="cases">Positive tests</option>
+            <option value="deaths">Deaths</option>
+            <option value="vax">Vaccinations</option>
+          </select>
+          <input id="percapita" type="checkbox" checked /><label for="percapita">Per capita</label>
           <div class="search dropdown"></div>
         </td>
       </tr>

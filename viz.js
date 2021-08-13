@@ -1,7 +1,59 @@
-const perCapita = true;
+var perCapita = true;
+var update = function(){};
+var slider;
+var interval;
+var numDays = 0;
 
 var dates = []
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    
+var paths = {
+    cases: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
+    deaths: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
+    vax: "https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_county_condensed_data" 
+}
+    
+var scales =  {
+    cases: {
+        totals:  {
+            title: "Total positive tests",
+            labels: [0, 1, 10, 100, 1000, 10000, 100000, 1000000],
+            color: [[1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
+        },
+        per_capita:  {
+            title: "Percentage of positive tests per capita",
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
+        }
+    },
+    deaths: {
+        totals:  {
+            title: "Total deaths",
+            labels: [0, 1, 10, 100, 1000, 10000],
+            color: [[1, 100, 100000],  ["#E1EEE5", "#716BA5", "#3A802F"]]
+        },
+        per_capita:  {
+            title: "Percentage of deaths",
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.0001, 0.0025, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
+        }
+    },
+    vax: {
+        totals:  {
+            title: "Total vaccinations",
+            labels: [0, 1, 10, 100, 1000, 10000],
+            color: [[1, 100, 100000],  ["#E1EEE5", "#716BA5", "#3A802F"]]
+        },
+        per_capita:  {
+            title: "Percentage of vaccinations",
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.0001, 0.0025, 0.01, 0.1], ["#E1EEE5", "#716BA5", "#3A802F"]]
+        }
+    }
+};
+
+
+var field = "cases"
 
 var container = d3.select("#map")
     .attr("width", 1000)
@@ -30,26 +82,13 @@ var tooltip = d3.select("body").append("div")
 var path = d3.geoPath()
     .projection(projection)
 
-var color_helper = perCapita
-    ? d3.scaleLog([0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"])
-    : d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]);
-
 function color(num) {
     if (num == 0 || num == null) return "white"
-    return color_helper(num)
-}
 
-var legend = d3.select("#legend")
-    .attr("width", "1000")
-    .attr("height", "100")
-    .selectAll("g.legend")
-    .data(perCapita
-        ? [0.00001, 0.0001, 0.001, 0.01, 0.1]
-        : [0, 1, 10, 100, 1000, 10000, 100000, 1000000]
-    )
-    .enter()
-    .append("g")
-    .attr("class", "legend")
+    const format = perCapita ? 'per_capita' : 'totals';
+    const settings = scales[field][format].color;
+    return d3.scaleLog(settings[0], settings[1])(num);
+}
 
 var ls_w = 73, ls_h = 20
 
@@ -59,29 +98,41 @@ function linepos(x) {
     return 854 - x * ls_w
 }
 
-legend.append("rect")
-    .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
-    .attr("y", 30)
-    .attr("width", ls_w)
-    .attr("height", ls_h)
-    .style("fill", function(d, i) { return color(d) })
+drawLegend();
+function drawLegend() {
 
-labels = perCapita
-    ? ["0%", ".001%", ".001%", ".01%", ".1%" ]
-    : ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"];
+    const format = perCapita ? 'per_capita' : 'totals';
+    const labels = scales[field][format].labels;
+    const title = scales[field][format].title;
 
-legend.append("text")
-    .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
-    .attr("y", 70)
-    .text(function(d, i){ return labels[i] })
+    var legend = d3.select("#legend")
+        .html("")
+        .attr("width", "1000")
+        .attr("height", "100")
+        .selectAll("g.legend")
+        .data(labels)
+        .enter()
+        .append("g")
+        .attr("class", "legend")
 
-var legend_title = "Number of Coronavirus Cases"
+    legend.append("rect")
+        .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
+        .attr("y", 30)
+        .attr("width", ls_w)
+        .attr("height", ls_h)
+        .style("fill", function(d, i) { return color(d) })
 
-legend.append("text")
-    .attr("x", 417)
-    .attr("y", 20)
-    .text(function(){return legend_title})
+    legend.append("text")
+        .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
+        .attr("y", 70)
+        .text(function(d, i){ return labels[i] })
 
+    legend.append("text")
+        .attr("x", 417)
+        .attr("y", 20)
+        .text(function(){return title})
+}
+    
 g = svg.append("g")
 
 var zoom = d3.zoom()
@@ -109,6 +160,24 @@ var clicked_obj = null
 
 var search = null
 var topo = null
+
+d3.select('.data.dropdown').on('change', function() {
+    var option = d3.select(this).property('value');
+    field = option;
+    if (field == 'vax') {
+        loadData(paths.vax);
+    }
+    drawLegend();
+    update(dates.length - 1, interval.property('value'))
+});
+
+d3.select('#percapita').on('change', function() {
+    var option = d3.select(this).property('checked');
+    perCapita = option;
+
+    drawLegend();
+    update(dates.length - 1, interval.property('value'))
+});
 
 function load(us, data) {
     // name list for autocomplete
@@ -191,7 +260,7 @@ function load(us, data) {
                 })
             })
 
-    var slider = d3.select(".slider")
+    slider = d3.select(".slider")
         .append("input")
             .attr("class", "custom-range")
             .attr("type", "range")
@@ -202,13 +271,13 @@ function load(us, data) {
                 update(slider.property('value'), interval.property('value'))
             })
 
-    var interval = d3.select(".slider-interval")
+    interval = d3.select(".slider-interval")
         .append("input")
             .attr("class", "custom-range")
             .attr("type", "range")
             .attr("min", 0)
-            .attr("max", 121)
-            .property('value', 121)
+            .attr("max", numDays)
+            .property('value', numDays)
             .attr("step", 1)
             .on("input", function() {
                 update(slider.property('value'), interval.property('value'))
@@ -269,21 +338,21 @@ function load(us, data) {
         }
     }
 
-    function update(key, interval){
+    update = function (key, interval){
         infobar.selectAll("*").remove();
         slider.property("value", key)
         d3.select(".date")
-            .text(months[parseInt(dates[key].slice(0, 2)) - 1] + " " + parseInt(dates[key].slice(3)) + ", 2020")
+            .text(dates[key])
         d3.select(".interval")
-            .text(interval && interval !== '121' ? `Last ${interval} days` : 'All data')
+            .text(interval && interval !== numDays ? `Last ${interval} days` : 'All data')
         counties.style("fill", function(d) {
                 const item = data.get(+d.id);
-                return color(getData(item, key, 'cases', interval, perCapita))
+                return color(getData(item, key, field, interval, perCapita))
             })
             .on("mouseover", function(d) {
                 var obj = d3.selectAll("#id-" + data.get(+d.id).id)
                 var item = data.get(+d.id);
-                var cases = getData(item, key, 'cases', interval, false);
+                var cases = getData(item, key, field, interval, false);
 
                 if (clicked_obj) obj.style("opacity", 1)
                 else obj.style("opacity", 0.2)
@@ -291,13 +360,17 @@ function load(us, data) {
                 tooltip.transition()
                     .duration(250)
                     .style("opacity", 1)
-                tooltip.html(
-                    "<p><strong>" + data.get(+d.id).name + "</strong><br>" +
-                        cases.toLocaleString() + " confirmed case" +
-                        (cases == 1 ? "" : "s") +
-                        "</p>")
+                tooltip.html(makeTooltip())
                     .style("left", (d3.event.pageX + 15) + "px")
                     .style("top", (d3.event.pageY - 28) + "px")
+
+                function makeTooltip(){
+                    const type = field == 'cases' ? 'case' : 'death';
+                    return `<p>
+                        <strong>${data.get(+d.id).name}</strong><br>
+                        ${cases.toLocaleString()} confirmed ${type}${cases == 1 ? "" : "s"}
+                    </p>`
+                }
             })
             .on("mousemove", function (d) {
                 tooltip
@@ -413,39 +486,50 @@ function load(us, data) {
     update(dates.length - 1, interval.property('value'))
 }
 
-var data = new Map()
+var data;
 
-d3.json("data/counties-10m.json").then(function(us) {
-    d3.csv("data/lookup.csv", function (d) {
-        return [+d.FIPS, {"population": +d.Population, "name": d.Admin2 + ", " + d.Province_State}]
-    }).then(function(pop) {
-        pop = new Map(pop)
-        d3.csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv", function(d) {
-            d.date = d.date.slice(5)
-            if (d.county === "New York City") d.fips = 36061
-            if (!dates.includes(d.date)) {
-                dates.push(d.date)
-            }
-            if (data.get(+d.fips)) {
-                x = data.get(+d.fips)
-                x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
-                data.set(+d.fips, x)
-            }
-            else {
-                x = {}
-                x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
-                x["name"] = (pop.get(+d.fips) || {}).name || 'No name'
-                x["id"] = +d.fips
-                x["population"] = (pop.get(+d.fips) || {}).population || 'Unknown population'
-                data.set(+d.fips, x)
-            }
-        }).then(function (d) {
-            pop.forEach(function (value, key) {
-                if (!data.get(key)) {
-                    data.set(key, {"name": value.name, "population": value.population, "id": key})
+// Start with us-counties.csv data
+loadData(paths.cases);
+
+function loadData(path) {
+
+    data = new Map();
+
+    // TODO: caching
+    d3.json("data/counties-10m.json").then(function(us) {
+        d3.csv("data/lookup.csv", function (d) {
+            return [+d.FIPS, {"population": +d.Population, "name": d.Admin2 + ", " + d.Province_State}]
+        }).then(function(pop) {
+            pop = new Map(pop)
+            d3.csv(path, function(d) {
+                if (field === 'vax') 
+                    console.log(d);
+                if (d.county === "New York City") d.fips = 36061
+                if (!dates.includes(d.date)) {
+                    dates.push(d.date)
+                    numDays += 1;
                 }
+                if (data.get(+d.fips)) {
+                    x = data.get(+d.fips)
+                    x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
+                    data.set(+d.fips, x)
+                }
+                else {
+                    x = {}
+                    x[d.date] = {"cases": +d.cases, "deaths": +d.deaths}
+                    x["name"] = (pop.get(+d.fips) || {}).name || 'No name'
+                    x["id"] = +d.fips
+                    x["population"] = (pop.get(+d.fips) || {}).population || 'Unknown population'
+                    data.set(+d.fips, x)
+                }
+            }).then(function (d) {
+                pop.forEach(function (value, key) {
+                    if (!data.get(key)) {
+                        data.set(key, {"name": value.name, "population": value.population, "id": key})
+                    }
+                })
+                load(us, data)
             })
-            load(us, data)
         })
-    })
-})
+    });
+}
