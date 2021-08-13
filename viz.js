@@ -11,6 +11,30 @@ var paths = {
     deaths: "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv",
     vax: "https://covid.cdc.gov/covid-data-tracker/COVIDData/getAjaxData?id=vaccination_county_condensed_data" 
 }
+    
+var scales =  {
+    cases: {
+        totals:  {
+            labels: [0, 1, 10, 100, 1000, 10000, 100000, 1000000],
+            color: [[1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
+        },
+        per_capita:  {
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"]]
+        }
+    },
+    deaths: {
+        totals:  {
+            labels: [0, 1, 10, 100, 1000, 10000, 100000, 1000000],
+            color: [[1, 100, 100000],  ["#E1EEE5", "#716BA5", "#3A802F"]]
+        },
+        per_capita:  {
+            labels: [0.00001, 0.0001, 0.001, 0.01, 0.1],
+            color: [[0.0001, 0.001, 0.01], ["#E1EEE5", "#716BA5", "#3A802F"]]
+        }
+    },
+};
+
 
 var field = "cases"
 
@@ -43,9 +67,10 @@ var path = d3.geoPath()
 
 function color(num) {
     if (num == 0 || num == null) return "white"
-    return perCapita
-        ? d3.scaleLog([0.001, 0.01, 0.1], ["#fcde9c", "#e34f6f", "#7c1d6f"])(num)
-        : d3.scaleLog([1, 1000, 1000000], ["#fcde9c", "#e34f6f", "#7c1d6f"])(num);
+
+    const format = perCapita ? 'per_capita' : 'totals';
+    const settings = scales[field][format].color;
+    return d3.scaleLog(settings[0], settings[1])(num);
 }
 
 var ls_w = 73, ls_h = 20
@@ -58,15 +83,16 @@ function linepos(x) {
 
 drawLegend();
 function drawLegend() {
+
+    const format = perCapita ? 'per_capita' : 'totals';
+    const labels = scales[field][format].labels;
+
     var legend = d3.select("#legend")
         .html("")
         .attr("width", "1000")
         .attr("height", "100")
         .selectAll("g.legend")
-        .data(perCapita
-            ? [0.00001, 0.0001, 0.001, 0.01, 0.1]
-            : [0, 1, 10, 100, 1000, 10000, 100000, 1000000]
-        )
+        .data(labels)
         .enter()
         .append("g")
         .attr("class", "legend")
@@ -77,10 +103,6 @@ function drawLegend() {
         .attr("width", ls_w)
         .attr("height", ls_h)
         .style("fill", function(d, i) { return color(d) })
-
-    labels = perCapita
-        ? ["0%", ".0001%", ".001%", ".01%", ".1%" ]
-        : ["0", "1", "10", "100", "1,000", "10,000", "100,000", "1,000,000"];
 
     legend.append("text")
         .attr("x", function(d, i){ return 1000 - (i*ls_w) - ls_w})
